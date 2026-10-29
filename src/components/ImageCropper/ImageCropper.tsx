@@ -258,17 +258,19 @@ export const ImageCropper = ({
         </header>
 
         <div className={styles.stage}>
-          <canvas
-            ref={canvasRef}
-            className={cn(styles.canvas, isDraggingBox && styles.grabbing)}
-            onPointerDown={handlePointerDown}
-            onPointerMove={handlePointerMove}
-            onPointerUp={handlePointerUp}
-            onPointerCancel={handlePointerUp}
-          />
-          {overlayStyle && (
-            <div className={styles.selection} style={overlayStyle} />
-          )}
+          <div className={styles.frame}>
+            <canvas
+              ref={canvasRef}
+              className={cn(styles.canvas, isDraggingBox && styles.grabbing)}
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerUp={handlePointerUp}
+              onPointerCancel={handlePointerUp}
+            />
+            {overlayStyle && (
+              <div className={styles.selection} style={overlayStyle} />
+            )}
+          </div>
         </div>
 
         <div className={styles.controls}>
