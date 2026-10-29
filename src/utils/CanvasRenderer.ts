@@ -12,6 +12,9 @@ const ZONES = {
   elytra: { x: 288, y: 16, width: 80, height: 160 },
 } as const;
 
+// The front plus the one-pixel side strips on either side of it.
+const FRONT_WITH_SIDES = { x: 0, y: 8, width: 96, height: 128 };
+
 const CAPE_FILL = { x: 0, y: 0, width: 176, height: 136 };
 const CAPE_GRADIENT = { x: 8, y: 8, width: 168, height: 128 };
 
@@ -30,6 +33,7 @@ export type DrawOptions = {
   separateElytraGradient: boolean;
   elytraGradientColors: string[] | null;
   elytraGradDirection: GradientDirection;
+  coverSides: boolean;
 };
 
 export class CanvasRenderer {
@@ -86,6 +90,7 @@ export class CanvasRenderer {
       separateElytraGradient,
       elytraGradientColors,
       elytraGradDirection,
+      coverSides,
     } = options;
 
     const elytraColors =
@@ -140,7 +145,13 @@ export class CanvasRenderer {
 
     ctx.globalCompositeOperation = "source-over";
 
-    if (images.front) this.drawImage(ctx, images.front, ZONES.front);
+    if (images.front) {
+      this.drawImage(
+        ctx,
+        images.front,
+        coverSides ? FRONT_WITH_SIDES : ZONES.front
+      );
+    }
     if (images.back) this.drawImage(ctx, images.back, ZONES.back);
     if (images.elytra && template) {
       this.drawMaskedElytra(ctx, template, images.elytra);
