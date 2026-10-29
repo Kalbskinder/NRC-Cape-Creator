@@ -12,9 +12,6 @@ const ZONES = {
   elytra: { x: 288, y: 16, width: 80, height: 160 },
 } as const;
 
-// The front plus the one-pixel side strips on either side of it.
-const FRONT_WITH_SIDES = { x: 0, y: 8, width: 96, height: 128 };
-
 const CAPE_FILL = { x: 0, y: 0, width: 176, height: 136 };
 const CAPE_GRADIENT = { x: 8, y: 8, width: 168, height: 128 };
 
@@ -24,9 +21,8 @@ const ELYTRA_GRADIENT = { x: 272, y: 16, width: 96, height: 160 };
 const CAPE_BOTTOM_STRIP = { x: 88, y: 0, width: 80, height: 8 };
 const ELYTRA_BOTTOM_STRIP = { x: 272, y: 0, width: 48, height: 8 };
 
-const CAPE_SIDE_WIDTH = 8;
-const CAPE_LEFT_SIDE_X = 0;
-const CAPE_RIGHT_SIDE_X = 88;
+// One cape pixel: the width of the side strips and height of the top/bottom.
+const CAPE_EDGE = 8;
 
 type Box = { x: number; y: number; width: number; height: number };
 
@@ -47,6 +43,7 @@ export class CanvasRenderer {
 
   private maskCanvas: HTMLCanvasElement | null = null;
   private elytraCanvas: HTMLCanvasElement | null = null;
+  private wrapCanvas: HTMLCanvasElement | null = null;
 
   constructor() {
     this.loadTemplate();
@@ -150,17 +147,13 @@ export class CanvasRenderer {
     ctx.globalCompositeOperation = "source-over";
 
     if (images.front) {
-      this.drawImage(
-        ctx,
-        images.front,
-        coverSides ? FRONT_WITH_SIDES : ZONES.front
-      );
+      if (coverSides) this.drawWrappedFront(ctx, images.front);
+      else this.drawImage(ctx, images.front, ZONES.front);
     }
     if (images.back) this.drawImage(ctx, images.back, ZONES.back);
     if (images.elytra && template) {
       this.drawMaskedElytra(ctx, template, images.elytra);
     }
-    if (coverSides) this.coverSides(ctx, canvas);
 
     ctx.restore();
   }
@@ -253,27 +246,70 @@ export class CanvasRenderer {
     ctx.restore();
   }
 
-  // Extends the front's outermost pixel column onto the cape's side strips.
-  private coverSides(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) {
-    const scaleX = canvas.width / BASE_WIDTH;
-    const scaleY = canvas.height / BASE_HEIGHT;
+  // Draws an image cropped one cape pixel larger on every side, wrapping its
+  // border onto the side strips and the top and bottom of the cape.
+  private drawWrappedFront(
+    ctx: CanvasRenderingContext2D,
+    image: HTMLImageElement
+  ) {
     const { x, y, width, height } = ZONES.front;
+    const wrapWidth = width + CAPE_EDGE * 2;
+    const wrapHeight = height + CAPE_EDGE * 2;
 
-    const copyColumn = (sourceX: number, targetX: number) =>
-      ctx.drawImage(
-        canvas,
-        sourceX * scaleX,
-        y * scaleY,
-        CAPE_SIDE_WIDTH * scaleX,
-        height * scaleY,
-        targetX,
-        y,
-        CAPE_SIDE_WIDTH,
-        height
-      );
+    this.wrapCanvas ??= document.createElement("canvas");
+    const wrapCtx = sizedContext(this.wrapCanvas, wrapWidth, wrapHeight);
+    if (!wrapCtx) return;
 
-    copyColumn(x, CAPE_LEFT_SIDE_X);
-    copyColumn(x + width - CAPE_SIDE_WIDTH, CAPE_RIGHT_SIDE_X);
+    this.drawImage(wrapCtx, image, {
+      x: 0,
+      y: 0,
+      width: wrapWidth,
+      height: wrapHeight,
+    });
+
+    // The wrapped image shares the texture's coordinates, offset by the
+    // top strip, so the front, both sides and the top copy straight across.
+    ctx.drawImage(
+      this.wrapCanvas,
+      0,
+      CAPE_EDGE,
+      wrapWidth,
+      height,
+      x - CAPE_EDGE,
+      y,
+      wrapWidth,
+      height
+    );
+    ctx.drawImage(
+      this.wrapCanvas,
+      CAPE_EDGE,
+      0,
+      width,
+      CAPE_EDGE,
+      x,
+      y - CAPE_EDGE,
+      width,
+      CAPE_EDGE
+    );
+
+    // The bottom face is stored upside down, with its front edge at the
+    // bottom of the strip.
+    const bottom = CAPE_BOTTOM_STRIP;
+    ctx.save();
+    ctx.translate(bottom.x, bottom.y + bottom.height);
+    ctx.scale(1, -1);
+    ctx.drawImage(
+      this.wrapCanvas,
+      CAPE_EDGE,
+      CAPE_EDGE + height,
+      width,
+      CAPE_EDGE,
+      0,
+      0,
+      bottom.width,
+      bottom.height
+    );
+    ctx.restore();
   }
 
   private drawMaskedElytra(

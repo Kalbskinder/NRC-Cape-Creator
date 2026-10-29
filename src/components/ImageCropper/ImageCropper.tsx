@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import styles from "./ImageCropper.module.scss";
 
 const CAPE_ASPECT = 80 / 128;
-const CAPE_WITH_SIDES_ASPECT = 96 / 128;
+const CAPE_WITH_SIDES_ASPECT = 96 / 144;
 
 type Rect = { x: number; y: number; width: number; height: number };
 type Point = { x: number; y: number };
