@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 
+import { Checkbox } from "@/components/Checkbox/Checkbox";
 import { GhostButton } from "@/components/GhostButton/GhostButton";
 import { ImageCropper } from "@/components/ImageCropper/ImageCropper";
 import { CapeBackIcon } from "@/icons/CapeBackIcon";
@@ -140,6 +141,11 @@ export const ImagePanel = ({
             );
           })}
         </div>
+        <Checkbox
+          checked={coverSides}
+          onChange={onCoverSidesChange}
+          label="Cover sides"
+        />
       </section>
 
       <section className={styles.section}>

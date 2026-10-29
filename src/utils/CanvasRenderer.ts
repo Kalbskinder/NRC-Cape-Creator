@@ -24,6 +24,10 @@ const ELYTRA_GRADIENT = { x: 272, y: 16, width: 96, height: 160 };
 const CAPE_BOTTOM_STRIP = { x: 88, y: 0, width: 80, height: 8 };
 const ELYTRA_BOTTOM_STRIP = { x: 272, y: 0, width: 48, height: 8 };
 
+const CAPE_SIDE_WIDTH = 8;
+const CAPE_LEFT_SIDE_X = 0;
+const CAPE_RIGHT_SIDE_X = 88;
+
 type Box = { x: number; y: number; width: number; height: number };
 
 export type DrawOptions = {
@@ -156,6 +160,7 @@ export class CanvasRenderer {
     if (images.elytra && template) {
       this.drawMaskedElytra(ctx, template, images.elytra);
     }
+    if (coverSides) this.coverSides(ctx, canvas);
 
     ctx.restore();
   }
@@ -246,6 +251,29 @@ export class CanvasRenderer {
     ctx.imageSmoothingEnabled = width > 256 || height > 256;
     ctx.drawImage(image, box.x, box.y, box.width, box.height);
     ctx.restore();
+  }
+
+  // Extends the front's outermost pixel column onto the cape's side strips.
+  private coverSides(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) {
+    const scaleX = canvas.width / BASE_WIDTH;
+    const scaleY = canvas.height / BASE_HEIGHT;
+    const { x, y, width, height } = ZONES.front;
+
+    const copyColumn = (sourceX: number, targetX: number) =>
+      ctx.drawImage(
+        canvas,
+        sourceX * scaleX,
+        y * scaleY,
+        CAPE_SIDE_WIDTH * scaleX,
+        height * scaleY,
+        targetX,
+        y,
+        CAPE_SIDE_WIDTH,
+        height
+      );
+
+    copyColumn(x, CAPE_LEFT_SIDE_X);
+    copyColumn(x + width - CAPE_SIDE_WIDTH, CAPE_RIGHT_SIDE_X);
   }
 
   private drawMaskedElytra(
